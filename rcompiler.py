@@ -3,6 +3,8 @@ import sys
 
 stack = {"AX": 0, "BX": 0, "CX": 0, "DX": 0}
 variables = {"AX": 0, "BX": 0, "CX": 0, "DX": 0}
+instructions = ["MOV", "CMP", "PUSH", "PULL", "DIV", "MUL", "SUB", "ADD", "INC", "DEC"]
+jumps = ["JNE", "JE", "JMP"]
 
 def read():
     it = iter(sys.stdin.read().splitlines())
@@ -33,6 +35,9 @@ def read():
         except:
             break
 
+    instructions = [item for line in file for item in line]
+    #print(instructions)
+    #print("")
 
 
 
@@ -72,12 +77,16 @@ def operator(instruction, where, value):
         temporal = int(value)
     if instruction == "ADD":
         variables[where] += temporal
-    elif instruction == "RES":
+    elif instruction == "SUB":
         variables[where] -= temporal
     elif instruction == "MUL":
         variables[where] *= temporal
     elif instruction == "DIV":
         variables[where] //= temporal
+    elif instruction == "INC":
+        variables[where] += 1
+    elif instruction == "DEC":
+        variables[where] -= 1
 
 def fin():
     exit()
