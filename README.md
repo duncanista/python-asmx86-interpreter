@@ -2,8 +2,15 @@
 
 Python terminal program that receives a `.txt` with x8086 assembly data and reverse compiles it.
 
-## Developed by:
+## Collaborators:
 * Francisco Arenas
 * Ivan Honc Ayón
 * Jordan González
 
+## Contributing
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
+
+Please make sure to update tests as appropriate, following the standard.
+
+## License
+[MIT](https://choosealicense.com/licenses/mit/)
