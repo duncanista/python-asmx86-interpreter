@@ -1,6 +1,6 @@
-# Reverse Compiler for x8086 Architectures
+# Reverse Compiler for x86 Architectures
 
-Python terminal program that receives a `.txt` with x8086 assembly data and reverse compiles it.
+Python terminal program that receives a `.txt` with x86 assembly data and reverse compiles it.
 
 ## Collaborators:
 * Francisco Arenas
