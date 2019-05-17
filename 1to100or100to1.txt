@@ -10,19 +10,19 @@ org 100h
                     ; Si es par
     JE PAR
     JNE IMPAR
-    
+
     PAR: MOV CX, 100
     C1:  PUSH CX
          DEC CX
          CMP CX, 1
-         JNE C1     
-         
+         JNE C1
+
     FIN: INT 21h
          RET
-    
+
     IMPAR: MOV CX, 1
     C2:    PUSH CX
            INC CX
            CMP CX, 100
-           JNE C2   
+           JNE C2
            JMP FIN
