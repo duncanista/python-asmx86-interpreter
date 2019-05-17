@@ -1,7 +1,7 @@
 #encoding: utf-8
 import sys
 
-stack = {"AX": 0, "BX": 0, "CX": 0, "DX": 0}
+stack = {"AX": 0, "BX": 0, "CX": 0, "DX": 0, "CMP": None}
 variables = {"AX": 0, "BX": 0, "CX": 0, "DX": 0}
 instructions = ["MOV", "CMP", "PUSH", "DIV", "MUL", "SUB", "ADD", "INC", "DEC"]
 jumps = ["JNE", "JE", "JMP"]
@@ -9,100 +9,145 @@ end = ["INT", "21h", "RET"]
 ignore = ["org", "100h"]
 functions = {}
 
-
 def read():
     global instructions, jumps
     it = iter(sys.stdin.read().splitlines())
     file = []
     next(it)
-    while (True):
+    while True:
         try:
             line = next(it).split()
-            if (line):
-                if (";" in line):
+            if line:
+                line = " ".join(line).replace(',', ' ')
+                line = line.split()
+                if ";" in line:
                     index = line.index(";")
                     line = line[:index]
-                    if (line):
+                    if line:
                         file.append(line)
                 else:
-                    line = " ".join(line)
-                    if (";" in line):
+                    line =  " ".join(line)
+                    if ";" in line:
                         line.split()
                         index = 0
                         for i in range(len(line)):
-                            if (";" in line[i]):
+                            if ";" in line[i]:
                                 index = i
                         line = line[:index]
-                        if (line):
+                        if line:
                             file.append(line)
                     else:
                         file.append(line.split())
         except:
             break
-
     file = [item for line in file for item in line]
 
     return file
 
 def precompile(file):
+    global functions, instructions, jumps, end, ignore
     items = file
+    new_items = []
     i = 0
-    f = ""
-    functionActive = False
+    functionKey = ""
+    compilingFunction = False
+
     while (i < len(items)):
         element = items[i]
-        if (element in instructions):
+
+        if element in instructions:
             register = items[i+1]
-            if (not functionActive):
-                nextElement = items[i + 2]
-                #i += executeInstruction(element, register, nextElement)
-                print("INSTR  ['{}']".format(element))
-                print("INSTR >['{}']".format(register))
-            else:
+            nextElement = items[i+2]
 
-                print("INSTR  ['{}']".format(element))
-                print("INSTR >['{}']".format(register))
-                functions[f].append(element)
-                functions[f].append(register)
-                nextElement = items[i + 2]
-                if (nextElement in instructions):
-                    i += 1
-                else:
+            if "h" in nextElement:
+                nextElement = nextElement.replace('h','')
+
+            if not compilingFunction:
+
+                # i += executeInstruction(element, register, nextElement)
+                #print("INSTR  ['{}']".format(element))
+                #print("INSTR >['{}']".format(register))
+
+                new_items.append(element)
+                new_items.append(register)
+                i += 1
+                if nextElement not in instructions:
                     variable = nextElement
-                    print("INSTR <['{}']".format(variable))
-                    functions[f].append(variable)
-                    i += 2
+                    new_items.append(variable)
+                    #print("INSTR <['{}']".format(variable))
+                    i += 1
 
-        elif (element in jumps):
+            else:
+                #print("INSTR  ['{}']".format(element))
+                #print("INSTR >['{}']".format(register))
+                functions[functionKey].append(element)
+                functions[functionKey].append(register)
+                i += 1
+                if nextElement not in instructions:
+                    variable = nextElement
+                    functions[functionKey].append(variable)
+                    # print("INSTR <['{}']".format(variable))
+                    i += 1
+
+        elif element in jumps:
             jumpTo = items[i+1]
-            if (not functionActive):
-                print("")
-                print("JUMP  ['{}']".format(element))
-                print("JUMP >['{}']".format(jumpTo))
+            if not compilingFunction:
+                #print("")
+                #print("JUMP  ['{}']".format(element))
+                #print("JUMP >['{}']".format(jumpTo))
+                new_items.append(element)
+                new_items.append(jumpTo)
             else:
-                if (not isFunction(f)):
-                    functions[f] = []
-                print("JUMP  ['{}']".format(element))
-                print("JUMP >['{}']".format(jumpTo))
-                functions[f].append(element)
-                functions[f].append(jumpTo)
-
+                #print("JUMP  ['{}']".format(element))
+                #print("JUMP >['{}']".format(jumpTo))
+                functions[functionKey].append(element)
+                functions[functionKey].append(jumpTo)
             i += 1
-        elif (':' in element):
-            print("FUNCT  ['{}']".format(element))
-            print("---- FUNCTION")
+        elif ':' in element:
+            #print("FUNCT  ['{}']".format(element))
+            #print("---- FUNCTION")
+            new_items.append(element)
             functions[element] = []
-            f = element
-            functionActive = True
-        else:
-            if (not functionActive):
-                print("!!!!   ['{}']".format(element))
+            functionKey = element
+            compilingFunction = True
+        elif element in end:
+            if not compilingFunction:
+                new_items.append(element)
             else:
-                functions[f].append(items[i])
-                print("!!!!  ['{}']".format(element))
+                functions[functionKey].append(element)
+        else:
+            if element in ignore:
+                pass
+            else:
+                if not compilingFunction:
+                    print("No sé que es esto  ['{}']".format(element))
+                else:
+                    functions[functionKey].append(element)
+                    print("No sé que es esto ['{}']".format(element))
         i += 1
 
-    return 0
+    return new_items
+
+def compile(file):
+    items = file
+    i = 0
+
+    while i < len(items):
+        element = items[i]
+        register = ""
+        nextElement = ""
+        if i + 1 < len(items):
+            register = items[i + 1]
+        if i + 2 < len(items):
+            nextElement = items[i+2]
+
+        index, activeFunction = executeInstruction(element, register, nextElement)
+        if activeFunction:
+            i = items.index(activeFunction)
+        else:
+            i += index
+
+        i += 1
 
 def isRegister(value):
     return bool(variables.get(value))
@@ -119,26 +164,52 @@ def getPreviousVariable(toFind):
 def executeInstruction(instruction, register, nextElement):
     global instructions
     index = 1
-    if(instruction == "MOV"):
+    activeFunction = ""
+    if instruction == "MOV":
         mov(register, nextElement)
-        index = 2
-    elif(instruction == "CMP"):
-        cmp(register, nextElement)
-        index = 2
-    elif(instruction == "PUSH"):
-        push(register, nextElement)
-    else:
-        pass
-
-
-
-    if(nextElement in instructions):
         index += 1
+    elif instruction == "CMP":
+        stack["CMP"] = cmp(register, nextElement)
+        index += 1
+    elif instruction == "PUSH":
+        push(register)
+
+    elif instruction in ["INC", "DEC", "ADD", "SUB", "MUL", "DIV"]:
+        index = operator(instruction, register, nextElement)
+    elif instruction in jumps:
+        activeFunction = jump(instruction, register)
     else:
-        variable = nextElement
-        print("INSTR <['{}']".format(variable))
-        index += 2
-    return 0
+        activeFunction = instruction
+        index -= 1
+
+    if instruction in end:
+        print(stack)
+        print(variables)
+        fin()
+
+    if activeFunction:
+        if ":" not in activeFunction:
+            activeFunction += ":"
+        compile(functions[activeFunction])
+
+
+    return index, activeFunction
+
+def jump(instruction, where):
+    global stack
+    comparison = stack["CMP"]
+    activateFunction = None
+
+    if(instruction in jumps[:2]):
+        if(instruction == "JE"):
+            if comparison:
+                activateFunction = where
+        else:
+            if not comparison:
+                activateFunction = where
+    else:
+        activateFunction = where
+    return activateFunction
 
 def mov(where, value):
     global variables
@@ -155,63 +226,78 @@ def cmp(where, value):
         comparison = (variables[where] == int(value))
     return comparison
 
-def push(where, value):
-    if isRegister(value):
-        stack[where] = variables[value]
-    else:
-        stack[where] = int(value)
+def push(where):
+    global stack
+    stack[where] = variables[where]
+    print(variables[where])
 
 def operator(instruction, where, value):
-    if isRegister(value):
-        temporal = variables[value]
-    else:
-        if(value not in instructions):
-            temporal = int(value)
-        else:
-            pass
-    if instruction == "ADD":
-        variables[where] += temporal
-    elif instruction == "SUB":
-        variables[where] -= temporal
-    elif instruction == "MUL":
-        variables[where] *= temporal
-    elif instruction == "DIV":
-        if(value not in instructions):
-            if(isRegister(value)):
-                variables[where] //= variables[value]
-            else:
-                variables[where] //= temporal
-        else:
-            previousVariable = getPreviousVariable(where)
-            variables[where] //= variables[previousVariable]
+    global variables
+    index = 1
+    if instruction in ["ADD", "SUB", "MUL", "DIV"]:
+        index = operatorAux(instruction, where, value)
     elif instruction == "INC":
         variables[where] += 1
     elif instruction == "DEC":
         variables[where] -= 1
+    else:
+        pass
+    return index
+
+def operatorAux(instruction, where, value):
+    global variables, instructions
+    index = 1
+    add = sub = mul = div = False
+    if instruction == "ADD":
+        add = True
+    elif instruction == "SUB":
+        sub = True
+    elif instruction == "MUL":
+        mul = True
+    elif instruction == "DIV":
+        div = True
+    if value not in instructions:
+        if isRegister(value):
+            if add:
+                variables[where] += variables[value]
+            elif sub:
+                variables[where] -= variables[value]
+            elif mul:
+                variables[where] *= variables[value]
+            elif div:
+                variables["DX"] = variables[where] % variables[value]
+        else:
+            temporal = int(value)
+            if add:
+                variables[where] += temporal
+            elif sub:
+                variables[where] -= temporal
+            elif mul:
+                variables[where] *= temporal
+            elif div:
+                variables["DX"] = variables[where] % variables[value]
+        index = 2
+    else:
+        previousVariable = getPreviousVariable(where)
+        if add:
+            variables[where] += variables[previousVariable]
+        elif sub:
+            variables[where] -= variables[previousVariable]
+        elif mul:
+            variables[where] *= variables[previousVariable]
+        elif div:
+            variables["DX"] = variables[where] % variables[previousVariable]
+    return index
 
 def fin():
     exit()
 
-file = read()
-#file = precompile(file)
+def main():
+    file = read()
+    file = precompile(file)
+    compile(file)
 
+    print("Stack: {}".format(stack))
+    print("Variables: {}".format(variables))
 
-for index in functions:
-    print("{} \t".format(index))
-    s = ""
-    list = functions[index]
-    for i in range(len(list)):
-        s += "\t" +list[i] + " "
-        if(i+1 < len(list)):
-            if(functions[index][i+1] in instructions or functions[index][i+1] in jumps):
-                s += "\n"
-    print(s)
-
-variables["CX"] = 2
-mov("AX", "CX")
-mov("BX", "8")
-print(variables)
-operator("DIV", "BX", "CX")
-print(variables)
-print(getPreviousVariable("BX"))
-
+main()
