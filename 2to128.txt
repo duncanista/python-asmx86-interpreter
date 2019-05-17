@@ -1,0 +1,16 @@
+## Contador
+
+org 100h
+
+     MOV AX,0
+     MOV CX,128
+
+LOOP:    ADD AX,2
+         PUSH AX
+         CMP AX,CX
+         JNE LOOP
+
+         MOV AX,0
+         MOV DX,0
+         INT 21h
+         RET
