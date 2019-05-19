@@ -7,6 +7,7 @@ instructions = ["MOV", "CMP", "PUSH", "DIV", "MUL", "SUB", "ADD", "INC", "DEC"]
 jumps = ["JNE", "JE", "JMP"]
 end = ["INT", "21h", "RET"]
 ignore = ["org", "100h"]
+movcount = 0
 functions = {}
 
 def read():
@@ -131,7 +132,6 @@ def precompile(file):
 def compile(file):
     items = file
     i = 0
-
     while i < len(items):
         element = items[i]
         register = ""
@@ -140,9 +140,9 @@ def compile(file):
             register = items[i + 1]
         if i + 2 < len(items):
             nextElement = items[i+2]
-
         index, activeFunction = executeInstruction(element, register, nextElement)
-        if activeFunction:
+
+        if activeFunction and activeFunction in items:
             i = items.index(activeFunction)
         else:
             i += index
@@ -164,12 +164,12 @@ def getPreviousVariable(toFind):
 def executeInstruction(instruction, register, nextElement):
     global instructions
     index = 1
-    activeFunction = ""
+    activeFunction = None
     if instruction == "MOV":
         mov(register, nextElement)
         index += 1
     elif instruction == "CMP":
-        stack["CMP"] = cmp(register, nextElement)
+        cmp(register, nextElement)
         index += 1
     elif instruction == "PUSH":
         push(register)
@@ -181,12 +181,8 @@ def executeInstruction(instruction, register, nextElement):
     else:
         activeFunction = instruction
         index -= 1
-
     if instruction in end:
-        print(stack)
-        print(variables)
         fin()
-
     if activeFunction:
         if ":" not in activeFunction:
             activeFunction += ":"
@@ -204,7 +200,7 @@ def jump(instruction, where):
         if(instruction == "JE"):
             if comparison:
                 activateFunction = where
-        else:
+        elif(instruction == "JNE"):
             if not comparison:
                 activateFunction = where
     else:
@@ -212,11 +208,12 @@ def jump(instruction, where):
     return activateFunction
 
 def mov(where, value):
-    global variables
+    global variables, movcount
     if isRegister(value):
         variables[where] = variables[value]
     else:
         variables[where] = int(value)
+    movcount+=1
 
 def cmp(where, value):
     global variables
@@ -224,12 +221,13 @@ def cmp(where, value):
         comparison = (variables[where] == variables[value])
     else:
         comparison = (variables[where] == int(value))
-    return comparison
+
+    stack["CMP"] = comparison
 
 def push(where):
     global stack
+    print("{} : {}".format(where, variables[where]))
     stack[where] = variables[where]
-    print(variables[where])
 
 def operator(instruction, where, value):
     global variables
@@ -238,6 +236,7 @@ def operator(instruction, where, value):
         index = operatorAux(instruction, where, value)
     elif instruction == "INC":
         variables[where] += 1
+
     elif instruction == "DEC":
         variables[where] -= 1
     else:
@@ -290,14 +289,19 @@ def operatorAux(instruction, where, value):
     return index
 
 def fin():
+    print("Finalizando programa...")
+    print("movcount: {}".format(movcount))
+    print("Stack: {}".format(stack))
+    print("Variables: {}".format(variables))
     exit()
 
 def main():
     file = read()
     file = precompile(file)
+    # for key in functions:
+    #     print(key)
+    #     for item in functions[key]:
+    #         print("\t {}".format(item))
     compile(file)
-
-    print("Stack: {}".format(stack))
-    print("Variables: {}".format(variables))
 
 main()
