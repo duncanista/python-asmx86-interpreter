@@ -298,10 +298,6 @@ def fin():
 def main():
     file = read()
     file = precompile(file)
-    # for key in functions:
-    #     print(key)
-    #     for item in functions[key]:
-    #         print("\t {}".format(item))
     compile(file)
 
 main()
