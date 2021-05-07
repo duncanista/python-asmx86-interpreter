@@ -1,4 +1,4 @@
-# Reverse Compiler for x86 Architectures
+# ASM x86 interpreter in Python
 
 Python terminal program that receives a `.txt` with x86 assembly data and reverse compiles it.
 
